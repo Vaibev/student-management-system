@@ -14,11 +14,19 @@ public class Main {
             System.out.println("\n===== STUDENT MANAGEMENT SYSTEM =====");
             System.out.println("1. Add New Student");
             System.out.println("2. View All Students");
-            System.out.println("3. Exit");
-            System.out.print("Enter your choice (1-3): ");
+            System.out.println("3. Update Student Department");
+            System.out.println("4. Delete Student");
+            System.out.println("5. Exit");
+            System.out.print("Enter your choice (1-5): ");
+
+            if (!scanner.hasNextInt()) {
+                System.out.println("Invalid input. Please enter a number.");
+                scanner.nextLine();
+                continue;
+            }
 
             int choice = scanner.nextInt();
-            scanner.nextLine(); // Clear the newline buffer
+            scanner.nextLine(); // clear buffer
 
             switch (choice) {
                 case 1:
@@ -28,16 +36,22 @@ public class Main {
                     viewStudents();
                     break;
                 case 3:
+                    updateStudent(scanner);
+                    break;
+                case 4:
+                    deleteStudent(scanner);
+                    break;
+                case 5:
                     System.out.println("Exiting application. Goodbye!");
                     scanner.close();
                     return;
                 default:
-                    System.out.println("Invalid choice. Please choose 1, 2, or 3.");
+                    System.out.println("Invalid choice. Please select 1 to 5.");
             }
         }
     }
 
-    // 1. Add Student (INSERT query)
+    // 1. CREATE
     private static void addStudent(Scanner scanner) {
         System.out.print("Enter Register Number (e.g., REG101): ");
         String regNo = scanner.nextLine();
@@ -66,7 +80,7 @@ public class Main {
         }
     }
 
-    // 2. View All Students (SELECT query)
+    // 2. READ
     private static void viewStudents() {
         String sql = "SELECT * FROM students";
 
@@ -94,6 +108,56 @@ public class Main {
             }
             System.out.println("------------------------------------------------------------");
 
+        } catch (SQLException e) {
+            System.out.println("Database Error: " + e.getMessage());
+        }
+    }
+
+    // 3. UPDATE
+    private static void updateStudent(Scanner scanner) {
+        System.out.print("Enter Register Number of student to update: ");
+        String regNo = scanner.nextLine();
+
+        System.out.print("Enter New Department: ");
+        String newDept = scanner.nextLine();
+
+        String sql = "UPDATE students SET department = ? WHERE reg_number = ?";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, newDept);
+            pstmt.setString(2, regNo);
+
+            int rowsUpdated = pstmt.executeUpdate();
+            if (rowsUpdated > 0) {
+                System.out.println(">> Department updated successfully!");
+            } else {
+                System.out.println(">> No student found with Register Number: " + regNo);
+            }
+        } catch (SQLException e) {
+            System.out.println("Database Error: " + e.getMessage());
+        }
+    }
+
+    // 4. DELETE
+    private static void deleteStudent(Scanner scanner) {
+        System.out.print("Enter Register Number of student to delete: ");
+        String regNo = scanner.nextLine();
+
+        String sql = "DELETE FROM students WHERE reg_number = ?";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, regNo);
+
+            int rowsDeleted = pstmt.executeUpdate();
+            if (rowsDeleted > 0) {
+                System.out.println(">> Student record deleted successfully!");
+            } else {
+                System.out.println(">> No student found with Register Number: " + regNo);
+            }
         } catch (SQLException e) {
             System.out.println("Database Error: " + e.getMessage());
         }
