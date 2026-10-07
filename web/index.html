@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Student Management Portal</title>
+  <style>
+    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #f4f6f9; margin: 0; padding: 30px; }
+    .container { max-width: 950px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    h2 { color: #2c3e50; margin-top: 0; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 12px; margin-bottom: 25px; align-items: end; }
+    .form-group { display: flex; flex-direction: column; }
+    label { font-size: 13px; font-weight: 600; color: #555; margin-bottom: 5px; }
+    input { padding: 9px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+    button { padding: 10px 16px; border: none; border-radius: 4px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+    .btn-add { background: #27ae60; color: white; }
+    .btn-add:hover { background: #219150; }
+    .btn-del { background: #e74c3c; color: white; padding: 6px 12px; font-size: 12px; }
+    .btn-del:hover { background: #c0392b; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th, td { text-align: left; padding: 12px; border-bottom: 1px solid #e1e8ed; }
+    th { background: #f8f9fa; color: #333; font-weight: 600; }
+    tr:hover { background: #fcfcfc; }
+    .status { padding: 10px; border-radius: 4px; margin-bottom: 15px; display: none; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>🎓 Student Management Portal</h2>
+  <div id="statusMessage" class="status"></div>
+
+  <!-- Input Form -->
+  <div class="form-grid">
+    <div class="form-group">
+      <label>Register Number</label>
+      <input type="text" id="regNo" placeholder="e.g. REG101">
+    </div>
+    <div class="form-group">
+      <label>Full Name</label>
+      <input type="text" id="name" placeholder="Student Name">
+    </div>
+    <div class="form-group">
+      <label>Department</label>
+      <input type="text" id="dept" placeholder="e.g. CSE">
+    </div>
+    <button class="btn-add" onclick="addStudent()">Add Student</button>
+  </div>
+
+  <!-- Records Table -->
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Register Number</th>
+        <th>Full Name</th>
+        <th>Department</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="studentTableBody">
+      <!-- Dynamic rows from MySQL -->
+    </tbody>
+  </table>
+</div>
+
+<script>
+  const API_URL = "http://localhost:8080/api";
+
+  // Fetch and display all students
+  async function loadStudents() {
+    try {
+      const response = await fetch(`${API_URL}/students`);
+      const students = await response.json();
+      const tbody = document.getElementById("studentTableBody");
+      tbody.innerHTML = "";
+
+      if (students.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#888;">No students registered yet.</td></tr>`;
+        return;
+      }
+
+      students.forEach(s => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${s.id}</td>
+            <td><strong>${s.reg}</strong></td>
+            <td>${s.name}</td>
+            <td>${s.dept}</td>
+            <td>
+              <button class="btn-del" onclick="deleteStudent('${s.reg}')">Delete</button>
+            </td>
+          </tr>
+        `;
+      });
+    } catch (err) {
+      console.error("Failed to load records:", err);
+    }
+  }
+
+  // Add a new student
+  async function addStudent() {
+    const reg = document.getElementById("regNo").value.trim();
+    const name = document.getElementById("name").value.trim();
+    const dept = document.getElementById("dept").value.trim();
+
+    if (!reg || !name || !dept) {
+      alert("All fields are required!");
+      return;
+    }
+
+    const payload = new URLSearchParams({ reg, name, dept });
+    const response = await fetch(`${API_URL}/add`, { method: "POST", body: payload });
+    
+    if (response.ok) {
+      document.getElementById("regNo").value = "";
+      document.getElementById("name").value = "";
+      document.getElementById("dept").value = "";
+      loadStudents();
+    } else {
+      alert("Error adding student. Register Number may already exist.");
+    }
+  }
+
+  // Delete a student
+  async function deleteStudent(regNo) {
+    if (!confirm(`Are you sure you want to delete student ${regNo}?`)) return;
+
+    const payload = new URLSearchParams({ reg: regNo });
+    const response = await fetch(`${API_URL}/delete`, { method: "POST", body: payload });
+    if (response.ok) {
+      loadStudents();
+    }
+  }
+
+  loadStudents();
+</script>
+
+</body>
+</html>
